@@ -20,17 +20,14 @@ const totalInput = document.querySelector("#totalClasses");
 const attendedInput = document.querySelector("#attendedClasses");
 const remainingInput = document.querySelector("#remainingClasses");
 const requiredInput = document.querySelector("#requiredPercentage");
+const attendanceForm = document.querySelector("#attendance-form");
+const resultsCard = document.querySelector("#results-card");
 const currentAttendance = document.querySelector("#currentAttendance");
-const expectedFinalAttendance = document.querySelector("#expectedFinalAttendance");
 const safeBunks = document.querySelector("#safeBunks");
-const recoveryPlan = document.querySelector("#recoveryPlan");
 const statusCard = document.querySelector("#statusCard");
 const eligibilityStatus = document.querySelector("#eligibilityStatus");
 const visualIndicator = document.querySelector("#visualIndicator");
 const indicatorText = document.querySelector("#indicatorText");
-const copyEmailButton = document.querySelector("#copyEmail");
-const copyStatus = document.querySelector("#copyStatus");
-const contactEmail = "foundrystudio.dev@gmail.com";
 const calculatorInputs = [totalInput, attendedInput, remainingInput, requiredInput];
 const validationFields = {
   totalClasses: {
@@ -74,7 +71,7 @@ function setStatus(status, label, message) {
   eligibilityStatus.textContent = label;
   indicatorText.textContent = message;
 
-  const dotColor = status === "safe" ? "#22C55E" : status === "warning" ? "#F59E0B" : "#EF4444";
+  const dotColor = status === "safe" ? "#22C55E" : status === "warning" ? "#2563EB" : "#0F172A";
   visualIndicator.querySelector("span").style.background = dotColor;
 }
 
@@ -93,18 +90,25 @@ function clearFieldErrors() {
 
 function setResultsUnavailable(message) {
   currentAttendance.textContent = "--";
-  expectedFinalAttendance.textContent = "--";
   safeBunks.textContent = "--";
-  recoveryPlan.textContent = "--";
   statusCard.className = "result-card status-card risk";
-  eligibilityStatus.textContent = "CHECK INPUTS";
+  eligibilityStatus.textContent = "Check";
   indicatorText.textContent = message;
-  visualIndicator.querySelector("span").style.background = "#EF4444";
+  visualIndicator.querySelector("span").style.background = "#0F172A";
   document.querySelector(".result-grid")?.classList.add("is-disabled");
 }
 
 function setResultsAvailable() {
   document.querySelector(".result-grid")?.classList.remove("is-disabled");
+}
+
+function animateResultsCard() {
+  if (!resultsCard) return;
+
+  resultsCard.classList.remove("is-updated");
+  window.requestAnimationFrame(() => {
+    resultsCard.classList.add("is-updated");
+  });
 }
 
 function validateCalculator() {
@@ -175,37 +179,32 @@ function updateCalculator() {
   const finalMargin = expectedFinal - required;
 
   setResultsAvailable();
-  currentAttendance.textContent = `${percentage.toFixed(2)}%`;
-  expectedFinalAttendance.textContent = `${expectedFinal.toFixed(2)}%`;
+  currentAttendance.textContent = `${Math.round(percentage)}%`;
   safeBunks.textContent = String(safe);
 
   if (shortage > 0) {
-    recoveryPlan.textContent = `Short by ${shortage}`;
     setStatus(
       "risk",
-      "NOT ELIGIBLE YET",
-      `Even with perfect attendance in the remaining ${remaining} class${remaining === 1 ? "" : "es"}, you will be short by ${shortage} attended class${shortage === 1 ? "" : "es"}.`
+      "At Risk",
+      `Need ${shortage} more`
     );
   } else if (minimumFutureAttendance === 0) {
-    recoveryPlan.textContent = "Already secure";
     setStatus(
       "safe",
-      "ELIGIBLE",
-      `Your semester outlook is secure. You can miss all ${remaining} remaining class${remaining === 1 ? "" : "es"} and still meet the requirement.`
+      "Safe",
+      "Secure"
     );
   } else if (finalMargin < 5) {
-    recoveryPlan.textContent = `Attend ${minimumFutureAttendance} of ${remaining}`;
     setStatus(
       "warning",
-      "ELIGIBLE IF CAREFUL",
-      `You are on track if you attend at least ${minimumFutureAttendance} of the remaining ${remaining} class${remaining === 1 ? "" : "es"}. You have ${safe} safe bunk${safe === 1 ? "" : "s"}.`
+      "Careful",
+      `Attend ${minimumFutureAttendance}`
     );
   } else {
-    recoveryPlan.textContent = `Attend ${minimumFutureAttendance} of ${remaining}`;
     setStatus(
       "safe",
-      "LIKELY ELIGIBLE",
-      `You are projected to finish above the requirement with ${safe} additional safe bunk${safe === 1 ? "" : "s"}.`
+      "Safe",
+      "On track"
     );
   }
 }
@@ -214,21 +213,16 @@ calculatorInputs.forEach((input) => {
   input.addEventListener("input", updateCalculator);
 });
 
+attendanceForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  updateCalculator();
+  animateResultsCard();
+});
+
 updateCalculator();
 
-if (copyEmailButton && copyStatus) {
-  copyEmailButton.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(contactEmail);
-      copyStatus.textContent = `Email copied: ${contactEmail}`;
-    } catch {
-      copyStatus.textContent = `Email: ${contactEmail}`;
-    }
-  });
-}
-
 const revealTargets = document.querySelectorAll(
-  "main section, .about-card, .feature-card, details, .contact-form"
+  "main section, .calc-panel, .result-card, details, .feature-card, .content-card, .policy-card, .contact-card"
 );
 
 const sections = document.querySelectorAll("main section[id]");
